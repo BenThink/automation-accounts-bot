@@ -30,6 +30,7 @@ It was built using *Puppeteer / JavaScript / Node.js*
  - no. of attack cyles / updates the data on same line
  - no. of attack / updates the data on same line
 
+
   *Here's a Print Screen of the bot in action:*
 ![image](https://github.com/BenThink/automation-accounts-bot/assets/28758782/7ed03fcc-3f48-4fc4-acd8-ac41c115d7b3)
 
