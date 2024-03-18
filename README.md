@@ -4,6 +4,8 @@ This project is an *automation bot* for a browser game.
 
 It was built using *Puppeteer / JavaScript / Node.js*
 
+Logic-Flow: main.js -> mainControl.js -> startBotActions.js -> logIn.js -> attack.js
+
 *The bot is started from Terminal / PowerShell and its main purpose is to log in multiple accounts and perfom a given task:*
 1. asks the user how many accounts to log in
 2. asks the user how many attack cycles to perform
