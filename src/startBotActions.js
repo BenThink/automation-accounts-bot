@@ -17,9 +17,6 @@ export async function startBotActions(accounts) {
             });
         }
 
-        // delay of 1 sec. for each acc
-        const delayTime = 1000;
-
         // loop over accounts
         for (const account of accounts) {
             let page;
