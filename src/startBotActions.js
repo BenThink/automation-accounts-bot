@@ -1,67 +1,65 @@
 import puppeteer from "puppeteer";
 import { logIn } from '../actions/logIn.js';
-import { stats } from '../actions/adventure.js';
-import { attackStats } from '../actions/attack.js';
-import { donateStats } from '../actions/donateGold.js';
-import { delayMillisec } from '../utilsJs/delayMillisec.js';
+import { startAttack } from '../actions/startAttack.js';
 
 
-// starts the tasks of the Bot
-export async function startBotActions(username, password, numberOfRuns, enemy, headlessMode, answer, amount) {
+let browser;
+
+// fct calling other fcts to procced further with the Bot flow
+export async function startBotActions(accounts) {
     try {
-        // Convert the numberOfRuns from string to int before the loop
-        const numberOfRunsInt = parseInt(numberOfRuns, 10);
-
-        for (let i = 0; i < numberOfRunsInt; i++) {
-            // Open chrome with config.
-            const browser = await puppeteer.launch({
-                headless: headlessMode === 'true',
-                defaultViewport: false
+        if (!browser) {
+            // launches chrome instance with some confing.
+            browser = await puppeteer.launch({
+                // show or not the chrome interface
+                headless: accounts[0].headlessMode === 'true',
+                defaultViewport: null
             });
+        }
 
-            // Open a new page
-            const page = await browser.newPage();
+        // 1 sec. delay 
+        const delayTime = 1000;
 
-            // Reset minTime, maxExp, maxEffic & advIndex for each iteration
-            stats.minTime = Infinity;
-            stats.maxExperience = -Infinity;
-            stats.maxEfficiency = -Infinity;
-            stats.selectedAdventureIndex = -1;
+        // loop over accounts
+        for (const account of accounts) {
+            let page;
 
-            // call the log in fct
-            await logIn(page, username, password, enemy, answer, amount);
+            try {
+                // open new page for each account
+                page = await browser.newPage();
 
-            // Display different data in console
-            console.log(`Adventure: ${i + 1}`);
-            console.log(`Time: ${stats.minTime} minutes`);
-            console.log(`Experience: ${stats.maxExperience} exp.`);
-            console.log(`Max. Efficiency: ${(stats.maxEfficiency).toFixed(2)} exp. / minute`);
-            console.log(`Battle: ${attackStats.battleNumber}`);
+                // call logIn function
+                await logIn(page, account);
 
-            if (answer === 'true') {
-                console.log(`Donated gold: ${donateStats.donatedGold} gold`);
-            }
-            console.log("----------------------------------------\n");
+                // wait 1 sec. between fcts.
+                await new Promise(resolve => setTimeout(resolve, delayTime));
 
-            // logging out
-            const logOutButton = await page.waitForSelector('#hmenu > li:nth-child(5) > a', { timeout: 3000, visible: true });
-            await logOutButton.click();
+                // call startAttack function
+                await startAttack(page, account.enemy);
 
-            // wait 1.5 sec after log out
-            await delayMillisec(1500);
+                // logging out
+                const logOutButton = await page.waitForSelector('#hmenu > li:nth-child(5) > a', { visible: true, timeout: 3000 });
+                await logOutButton.click();
+            } catch (error) {
+                // Handle errors for individual accounts
+                console.error(`\nError for account '${account.username}' --> ${error}`);
+            } finally {
+                if (page) {
+                    // wait 1 sec. before closing the current page
+                    await new Promise(resolve => setTimeout(resolve, delayTime));
 
-            // close chrome instance
-            await browser.close();
-
-            // stops delay at last itteration
-            if (i < numberOfRunsInt - 1) {
-                // Wait for the adventure to finish
-                const delay = stats.minTime * 60 * 1000;
-                await delayMillisec(delay);
+                    // close the page after each acc
+                    await page.close();
+                }
             }
         }
     } catch (error) {
         console.error(`\nError during startBotActions phase: ${error}\n`);
+    } finally {
+        if (browser) {
+            // close the browser after all accounts
+            await browser.close();
+            browser = null; // reset browser variable to allow opening a new browser in the next attack cycle
+        }
     }
 }
-
