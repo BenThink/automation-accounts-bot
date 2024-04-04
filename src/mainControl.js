@@ -1,78 +1,56 @@
 import { askQuestionsLetter } from "../utilsJs/askQuestionsLetter.js";
 import { askQuestionsLetterNr } from "../utilsJs/askQuestionsLetterNr.js";
 import { askQuestionsNumber } from "../utilsJs/askQuestionsNumber.js";
-
+import { startBotActions } from "./startBotActions.js";
 import { rl } from '../utilsJs/readLine.js';
-import { startBotActions } from './startBotActions.js';
-import readline from 'readline';
+import { delayMillisec } from '../utilsJs/delayMillisec.js';
 
+const MAX_RETRY = 3;// tries for entering data
 
-const MAX_RETRY = 3; // tries for entering data
-const DELAY_RETRY = 3000; // delay before trying again to enter data / millisec. to sec.(3)
-
-// fct that handles the core flow/logic of the Bot
+// fct for user inputs and the core flow/logic of the Bot
 export async function mainControl() {
+    let username, password, numberOfRuns, enemy, headlessMode, answer;
+    let amount = 0;
+
     for (let attempts = 1; attempts <= MAX_RETRY; attempts++) {
+        let continueExecution = true; // flag to check if we should continue execution
+
         try {
-            console.log('\n+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+');
+            console.log('\n+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+');
 
-            // getting user inputs
-            const numberAccounts = await askQuestionsNumber("Enter number of accounts: ");
-            const numberAccountsInt = parseInt(numberAccounts, 10);
-            // getting user inputs
-            const totalAttackCycles = await askQuestionsNumber("Enter number of attack cycles: ");
-            const totalAttackCyclesInt = parseInt(totalAttackCycles, 10);
+            // Prompt user for inputs
+            username = await askQuestionsLetter("Enter your username: ");
+            password = await askQuestionsLetterNr("Enter your password: ");
+            numberOfRuns = await askQuestionsNumber("\nEnter number of adventures: ");
+            enemy = await askQuestionsLetter("Enter enemy's name: ");
+            headlessMode = await askQuestionsLetter("Headless mode (true/false): ");
+            answer = await askQuestionsLetter("\nDonate gold (true/false): ");
 
-            console.log('---------------------------------------------------');
+            // Check if answer is 'true' for Donating Gold
+            if (answer === 'true') {
+                amount = await askQuestionsNumber("Enter the amount: ");
 
-            // array for the objects
-            const accounts = [];
-
-            // gets user inputs based on nr of acc
-            for (let i = 0; i < numberAccountsInt; i++) {
-                console.log(`\nAccount: ${i + 1}`);
-                const username = await askQuestionsLetter("Enter your username: ");
-                const password = await askQuestionsLetterNr("Enter your password: ");
-                const enemy = await askQuestionsLetter("Enter enemy's name: ");
-                const headlessMode = await askQuestionsLetter("Headless mode (true/false): ");
-                accounts.push({ username, password, enemy, headlessMode }); // create & push objects into the array var
             }
-            console.log('+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n');
+            console.log('+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n\n');
 
-            // close interface
-            rl.close();
+            rl.close(); // close interface
 
-            for (let i = 0; i < totalAttackCyclesInt; i++) {
-                if (i > 0) {
-                    // Move to previous line and clear it
-                    readline.moveCursor(rl.output, 0, -1);
-                    readline.clearLine(rl.output, 0);
-                }
-
-                // Print 'Attack Cycles' at the start of each cycle.
-                rl.output.write(`\rAttack Cycle: ${i + 1}\n`);
-
-                await startBotActions(accounts);
-
-                if (i < totalAttackCyclesInt - 1) {
-                    // create 5min delay variable
-                    const battleTime = (5 * 60) * 1000; // convert to millisec.
-                    await new Promise(resolve => setTimeout(resolve, battleTime)); // apply delay var
-                }
-            }
-            console.log('\n');
-            break; // Exit the loop if data was entered correct
+            break; // exiting loop if data entered correct
         } catch (error) {
             console.error(`\nError during mainControl phase: ${error}`);
+            continueExecution = false; // set flag false on error - stop continue execution 
 
-            // if all login attempts failed
             if (attempts === MAX_RETRY) {
                 console.error('All attempts to enter data failed! Exiting the bot...\n');
-                process.exit(1); // Exit the process with a failure code
+                process.exit(1); // exiting the bot with failure code    
             }
 
-            // Wait 3 sec before trying again
-            await new Promise(resolve => setTimeout(resolve, DELAY_RETRY));
+            // delay before trying again to enter data / millisec. to sec.(1.5)
+            await delayMillisec(1500);
+        } finally {
+            if (continueExecution) {
+                await startBotActions(username, password, numberOfRuns, enemy, headlessMode, answer, amount);
+            }
         }
     }
 }
