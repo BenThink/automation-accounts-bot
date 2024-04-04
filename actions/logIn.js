@@ -6,7 +6,12 @@ const URL = "https://www.arislegends.com/index.php";
 export async function logIn(page, { username, password }) {
     for (let attempt = 1; attempt <= MAX_LOGIN_ATTEMPTS; attempt++) {
         try {
-            await page.goto(URL); // goes to game's url 
+            // waits for both actions to complete
+            await Promise.all([
+                page.waitForNavigation({ waitUntil: 'networkidle0' }), // waits for navig. triggered by 'goto' to finish
+                page.goto(URL) // goes to game's url
+            ]);
+
             await page.waitForSelector(".login-form", { visible: true, timeout: 3000 });
 
             await page.type("#l_user", username, { delay: 25 });
